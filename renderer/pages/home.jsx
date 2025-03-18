@@ -4,7 +4,7 @@ import useExcelProcessor from '../components/useExcelProcessor';
 
 function Home() {
   const ref = useRef(null);
-  const { handleFileChange, resetUpload, uploads, processExcelFiles, loading } = useExcelProcessor();
+  const { handleFileChange, resetUpload, uploads, processExcelFiles, loading , processAndMergeSldExcelFiles } = useExcelProcessor();
   const [department, setDepartment] = useState('');
 
   const FileUpload = ({ id, label, sublabel, multiple = false, onFileChange }) => (
@@ -117,7 +117,7 @@ function Home() {
               <button
                 type="button"
                 disabled={loading}
-                onClick={processExcelFiles}
+                onClick={department == 1 ? processExcelFiles : processAndMergeSldExcelFiles}
                 className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
