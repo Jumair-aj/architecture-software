@@ -29,15 +29,20 @@ const useExcelProcessor = () => {
     }));
   };
 
-  const readExcel = (file) => {
+  const readExcel = (file, sheetIndex = 0) => {
     return new Promise((resolve) => {
       const reader = new FileReader();
-      reader.readAsArrayBuffer(file);
+      reader.readAsBinaryString(file);
       reader.onload = (e) => {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: "array" });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(sheet);
+        const data = e.target.result;
+        const workbook = XLSX.read(data, { type: "binary" });
+
+        // Ensure we get the correct sheet index
+        const sheetName = workbook.SheetNames[sheetIndex] || workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+        console.log(`✅ File: ${file.name}, Rows: ${jsonData.length}`); // Debug log
         resolve(jsonData);
       };
     });
@@ -56,19 +61,26 @@ const useExcelProcessor = () => {
     setLoading(true);
 
     try {
-      const fileData = await Promise.all(
-        fileGroups.flat().map(async (file) => await readExcel(file))
-      );
+      // Read files with correct sheet index
+      const fileData = await Promise.all([
+        readExcel(fileGroups[0][0], 1),  // First file (sheet index 1)
+        readExcel(fileGroups[1][0], 0),  // Second file (sheet index 0)
+        fileGroups.length > 2 ? readExcel(fileGroups[2][0], 0) : Promise.resolve([]), // Third file (optional)
+      ]);
 
-      if (fileData.length < 2) {
+      const [epeTags, merTags, sapTags] = fileData;
+
+      console.log("📝 Processed Data Counts:", {
+        epeTags: epeTags.length,
+        merTags: merTags.length,
+        sapTags: sapTags.length,
+      });
+
+      if (epeTags.length === 0 || merTags.length === 0) {
         alert("Not enough data processed.");
         setLoading(false);
         return;
       }
-
-      const epeTags = fileData[0]; // EPE TAG LIST
-      const merTags = fileData[1]; // MER EXTRACTED TAGS
-      const sapTags = fileData.length > 2 ? fileData[2] : []; // SAP FILE
 
       const merTagMap = {};
       merTags.forEach((row) => {
@@ -101,6 +113,7 @@ const useExcelProcessor = () => {
         };
       });
 
+      // Add MER Tags not in EPE
       merTags.forEach((merRow) => {
         if (!epeTags.some((drawing) => drawing["Tag Number"] === merRow["MER TAG NO"])) {
           processedData.push({
@@ -116,14 +129,15 @@ const useExcelProcessor = () => {
         }
       });
 
+      // Sorting
       processedData.sort((a, b) => (a["Drawing Number"] || "").localeCompare(b["Drawing Number"] || ""));
       processedData.forEach((item, index) => {
         item["SL.NO"] = index + 1;
       });
-
+      console.log("📝 Final Processed Data to Display:", processedData.length, processedData);
       generateExcel(processedData);
     } catch (error) {
-      console.error("Error processing Excel files:", error);
+      console.error("❌ Error processing Excel files:", error);
       alert("An error occurred while processing the files.");
     } finally {
       setLoading(false);
