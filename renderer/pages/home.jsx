@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import Head from 'next/head'
-import useExcelProcessor from './useExcelProcessor';
+import useExcelProcessor from '../components/useExcelProcessor';
 
 function Home() {
   const ref = useRef(null);
