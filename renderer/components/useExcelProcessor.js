@@ -65,7 +65,7 @@ const useExcelProcessor = () => {
       // Read files with correct sheet index
       const fileData = await Promise.all([
         readExcel(fileGroups[0][0], 1),  // First file (sheet index 1)
-        fileGroups.length > 2 ? readExcel(fileGroups[fileGroups.length - 1][0], 0) : Promise.resolve([]), // Third file (optional)
+        readExcel(fileGroups[fileGroups.length - 1][0], 0), // Third file (optional)
       ]);
 
       readExcel(fileGroups[1][0], 0)  // Second file (sheet index 0)
@@ -79,10 +79,9 @@ const useExcelProcessor = () => {
         }));
         merTags = merTags.concat(fileDataWithFilename);
       }))
-      const [epeTags , sapTags] = fileData;
-console.log("📝 Processed Data:", epeTags.length);
-console.log("📝 Processed Data:", merTags.length);
-console.log("📝 Processed Data:", sapTags.length);
+      const [epeTags, sapTags] = fileData;
+      const Dname = fileGroups.map(file => file[0].name.split('.')[0].split('-').join(''));
+
       console.log("📝 Processed Data Counts:", {
         epeTags: epeTags.length,
         merTags: merTags.length,
@@ -109,6 +108,7 @@ console.log("📝 Processed Data:", sapTags.length);
         const tagNumber = drawing["Tag Number"];
         const merMatch = merTagMap[tagNumber];
         const sapMatch = sapTagMap[tagNumber];
+        console.log(sapMatch ? sapMatch["DESCRIPTION"] : "")
         let dngNo = ''
         if (drawing['Drawing no'].split('-').length > 3 || drawing['Drawing no'].length != 14) {
           dngNo = drawing['Drawing no']
@@ -121,7 +121,7 @@ console.log("📝 Processed Data:", sapTags.length);
           "SL.NO": i + 1,
           "Drawing Number": dngNo || '',
           "EPE Tag Number": tagNumber || '',
-          "MER Tag No": merMatch ? merMatch["MER TAG NO"] : "NOT IN MER",
+          "MER Tag No": merMatch ? merMatch["MER TAG NO"] : Dname.includes(drawing['Drawing no']) ? "NOT IN MER" : "",
           "Site Markup Tag No": merMatch ? merMatch["SITE CHANGE"] : "",
           "Final MER Tag No": merMatch ? (merMatch['SITE CHANGE'] && merMatch['SITE CHANGE'].includes("NO")) ? merMatch['MER TAG NO'] : merMatch['SITE CHANGE'] ? merMatch['SITE CHANGE'] : merMatch['MER TAG NO'] : "",
           "SAP tag": sapMatch
@@ -186,7 +186,7 @@ console.log("📝 Processed Data:", sapTags.length);
       processedData.forEach((item, index) => {
         item["SL.NO"] = index + 1;
       });
-      console.log("📝 Final Processed Data to Display:", processedData.length, processedData);
+      // console.log("📝 Final Processed Data to Display:", processedData.length, processedData);
       generateExcel(processedData);
     } catch (error) {
       console.error("❌ Error processing Excel files:", error);
@@ -196,16 +196,16 @@ console.log("📝 Processed Data:", sapTags.length);
     }
   };
 
-  
-const generateExcel = async (data) => {
-  const workbook = new ExcelJS.Workbook();
-  const worksheet = workbook.addWorksheet("Architect");
 
-  // Set row height for header row
-  worksheet.getRow(1).height = 50;
+  const generateExcel = async (data) => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Architect");
 
-  // Define column headers and styles
-  worksheet.columns = [
+    // Set row height for header row
+    worksheet.getRow(1).height = 50;
+
+    // Define column headers and styles
+    worksheet.columns = [
       { header: 'SL.NO', key: 'SL.NO', width: 10 },
       { header: 'Drawing Number', key: 'Drawing Number', width: 20 },
       { header: 'EPE Tag Number', key: 'EPE Tag Number', width: 20 },
@@ -213,66 +213,65 @@ const generateExcel = async (data) => {
       { header: 'Site Markup Tag No', key: 'Site Markup Tag No', width: 20 },
       { header: 'Final MER Tag No', key: 'Final MER Tag No', width: 20 },
       { header: 'SAP tag', key: 'SAP tag', width: 20 },
-      { header: 'Equipment Description From SAP', key: 'Equipment Description From SAP', width: 30 },
+      { header: 'Equipment Description from SAP', key: 'Equipment Description from SAP', width: 30 },
       { header: 'Equipment Type - New', key: 'Equipment Type - New', width: 20 },
       { header: 'Size - Old', key: 'Size - Old', width: 20 },
       { header: 'Size From SAP', key: 'Size From SAP', width: 20 },
       { header: 'Size - New', key: 'Size - New', width: 20 },
       { header: 'Drawing No.', key: 'Drawing No.', width: 20 },
-      { header: 'Rev', key: 'Rev', width: 10 },
+      { header: 'Rev', key: 'Rev', width: 10 }, 
       { header: 'PCR / Project No.', key: 'PCR / Project No.', width: 20 },
       { header: 'Additional Information', key: 'Additional Information', width: 30 },
       { header: 'DRAWING LINK', key: 'DRAWING LINK', width: 20 },
       { header: 'ECM LINK', key: 'ECM LINK', width: 20 },
       { header: 'OAO LINK', key: 'OAO LINK', width: 20 },
-  ];
+    ];
+    // Add data rows
+    worksheet.addRows(data);
+    
+    // Style the header row
+    const headerRow = worksheet.getRow(1);
+    headerRow.font = { bold: true, color: { argb: '000000' }, size: 11 };
+    headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'C0C0C0' } };
+    headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
 
-  // Add data rows
-  worksheet.addRows(data);
-
-  // Style the header row
-  const headerRow = worksheet.getRow(1);
-  headerRow.font = { bold: true, color: { argb: '000000' }, size: 11 };
-  headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'C0C0C0' } };
-  headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
-
-  // Apply specific cell background color for given columns
-  const highlightColumns = [3, 5, 8, 11, 17, 18, 19]; // Columns that need highlighting
-  highlightColumns.forEach((colIndex) => {
+    // Apply specific cell background color for given columns
+    const highlightColumns = [3, 5, 8, 11, 17, 18, 19]; // Columns that need highlighting
+    highlightColumns.forEach((colIndex) => {
       headerRow.getCell(colIndex).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC000' } };
-  });
+    });
 
-  // Adjust styles for all rows & apply borders
-  worksheet.eachRow({ includeEmpty: true }, (row) => {
+    // Adjust styles for all rows & apply borders
+    worksheet.eachRow({ includeEmpty: true }, (row) => {
       row.eachCell({ includeEmpty: true }, (cell) => {
-          cell.alignment = { vertical: 'middle', horizontal: 'center' };
-          cell.border = {
-              top: { style: 'thin' },
-              left: { style: 'thin' },
-              bottom: { style: 'thin' },
-              right: { style: 'thin' }
-          };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        };
       });
-  });
+    });
 
-  // Auto-fit columns based on content
-  worksheet.columns.forEach(column => {
+    // Auto-fit columns based on content
+    worksheet.columns.forEach(column => {
       let maxLength = 0;
       column.eachCell({ includeEmpty: true }, (cell) => {
-          const columnLength = cell.value ? cell.value.toString().length : 10;
-          maxLength = Math.max(maxLength, columnLength);
+        const columnLength = cell.value ? cell.value.toString().length : 10;
+        maxLength = Math.max(maxLength, columnLength);
       });
       column.width = maxLength + 5; // Add some padding
-  });
+    });
 
-  // Generate the Excel file and trigger download
-  const buffer = await workbook.xlsx.writeBuffer();
-  const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = "final-excel.xlsx";
-  link.click();
-};
+    // Generate the Excel file and trigger download
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "final-excel.xlsx";
+    link.click();
+  };
 
 
   return {
