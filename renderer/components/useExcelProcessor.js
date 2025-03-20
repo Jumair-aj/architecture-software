@@ -69,19 +69,19 @@ const useExcelProcessor = () => {
         readExcel(fileGroups[0][0], 1), // First file (sheet index 1)
         readExcel(fileGroups[fileGroups.length - 1][0], 0), // Third file (optional)
       ]);
-      
+
       // Store merTags data
       let merTags = [];
-      
+
       let Dname = []
       // Process all middle files correctly
       await Promise.all(
-        fileGroups.slice(1, -1).map(async (files) => {         
+        fileGroups.slice(1, -1).map(async (files) => {
           // Wait for all files in the group to be processed
           const results = await Promise.all(
             files.map(async (file) => {
               const fileData = await readExcel(file, 0); // Assuming sheet index 0 for all file2 files
-              Dname.push(file.name.split(".")[0].split("-").join("")); 
+              Dname.push(file.name.split(".")[0].split("-").join(""));
               const fileDataWithFilename = fileData.map((row) => ({
                 ...row,
                 filename: file.name.split(".")[0].split("-").join(""), // Add the filename property to each row
@@ -89,33 +89,33 @@ const useExcelProcessor = () => {
               return fileDataWithFilename; // Return processed data
             })
           );
-      
+
           // Flatten results into merTags
           merTags = merTags.concat(...results);
           console.log(merTags);
         })
       );
-      
+
       const [epeTags, sapTags] = fileData;
-      
+
       console.log("📝 Processed Data Counts:", {
         epeTags: epeTags.length,
         merTags: merTags.length,
         sapTags: sapTags.length,
       });
-      
+
       // Ensure all promises resolve before checking lengths
       if (epeTags.length === 0 || merTags.length === 0) {
         alert("Not enough data processed.");
         setLoading(false);
         return;
       }
-      
+
 
       const merTagMap = {};
-     merTags.forEach((row) => {
-  merTagMap[row["MER TAG NO"]?.toLowerCase()] = row;
-});
+      merTags.forEach((row) => {
+        merTagMap[row["MER TAG NO"]?.toLowerCase()] = row;
+      });
 
 
       const sapTagMap = {};
@@ -124,12 +124,12 @@ const useExcelProcessor = () => {
       });
 
 
-const processedData = epeTags.map((drawing, i) => {
-  const tagNumber = drawing["Tag Number"]?.toLowerCase(); // Convert to lowercase
-  const merMatch = merTagMap[tagNumber] &&
-    merTagMap[tagNumber].filename === drawing["Drawing no"]?.toLowerCase()
-    ? merTagMap[tagNumber]
-    : null;
+      const processedData = epeTags.map((drawing, i) => {
+        const tagNumber = drawing["Tag Number"]; // Convert to lowercase
+        const merMatch = merTagMap[tagNumber.toLowerCase()] &&
+          (merTagMap[tagNumber.toLowerCase()].filename === drawing["Drawing no"])
+          ? merTagMap[tagNumber.toLowerCase()]
+          : null;
         const sapMatch = sapTagMap[tagNumber];
         // console.log(sapMatch ? sapMatch["DESCRIPTION"] : "")
         let dngNo = "";
