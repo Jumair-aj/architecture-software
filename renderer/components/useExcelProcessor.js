@@ -113,18 +113,23 @@ const useExcelProcessor = () => {
       
 
       const merTagMap = {};
-      merTags.forEach((row) => {
-        merTagMap[row["MER TAG NO"]] = row;
-      });
+     merTags.forEach((row) => {
+  merTagMap[row["MER TAG NO"]?.toLowerCase()] = row;
+});
+
 
       const sapTagMap = {};
       sapTags.forEach((row) => {
         sapTagMap[row["SAP-TAGS"]] = row;
       });
 
-      const processedData = epeTags.map((drawing, i) => {
-        const tagNumber = drawing["Tag Number"];
-        const merMatch = merTagMap[tagNumber];
+
+const processedData = epeTags.map((drawing, i) => {
+  const tagNumber = drawing["Tag Number"]?.toLowerCase(); // Convert to lowercase
+  const merMatch = merTagMap[tagNumber] &&
+    merTagMap[tagNumber].filename === drawing["Drawing no"]?.toLowerCase()
+    ? merTagMap[tagNumber]
+    : null;
         const sapMatch = sapTagMap[tagNumber];
         // console.log(sapMatch ? sapMatch["DESCRIPTION"] : "")
         let dngNo = "";
