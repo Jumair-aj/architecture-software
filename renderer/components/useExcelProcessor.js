@@ -223,6 +223,9 @@ const useExcelProcessor = () => {
               "-" +
               merRow.filename.slice(11);
           }
+
+          const sapMatch = sapTagMap[merRow["MER TAG NO"]];
+
           processedData.push({
             "SL.NO": processedData.length + 1,
             "Drawing Number": dngNo,
@@ -236,9 +239,11 @@ const useExcelProcessor = () => {
                   ? merRow["SITE CHANGE"]
                   : merRow["MER TAG NO"]
               : "",
-            "SAP tag": "NOT IN SAP",
+            "SAP tag": sapMatch ? "AVAILABLE IN SAP" : "NOT IN SAP",
             MERRemarks: "",
-            "Equipment Description from SAP": "",
+            "Equipment Description from SAP": sapMatch
+              ? sapMatch["DESCRIPTION"]
+              : "",
             "Equipment Type - New": "",
             "Size - Old": merRow
               ? merRow["Size - Old"] || merRow["Size - New"]
