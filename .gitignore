@@ -9,5 +9,6 @@ node_modules
 next-env.d.ts
 
 # build
-/app
+app
 dist
+/app

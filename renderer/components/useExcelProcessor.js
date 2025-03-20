@@ -1,6 +1,7 @@
 import { useState } from "react";
 import * as XLSX from "xlsx";
 import ExcelJS from "exceljs";
+import { file } from "jszip";
 
 const useExcelProcessor = () => {
   const [loading, setLoading] = useState(false);
@@ -68,36 +69,48 @@ const useExcelProcessor = () => {
         readExcel(fileGroups[0][0], 1), // First file (sheet index 1)
         readExcel(fileGroups[fileGroups.length - 1][0], 0), // Third file (optional)
       ]);
-
-      readExcel(fileGroups[1][0], 0); // Second file (sheet index 0)
+      
+      // Store merTags data
       let merTags = [];
+      
+      let Dname = []
+      // Process all middle files correctly
       await Promise.all(
-        fileGroups.slice(1, -1).map(async (file) => {
-          const fileData = await readExcel(file[0], 0); // Assuming sheet index 0 for all file2 files
-          // console.log(file[0].name.split('.')[0].split('-').join(''))
-          const fileDataWithFilename = fileData.map((row) => ({
-            ...row,
-            filename: file[0].name.split(".")[0].split("-").join(""), // Add the filename property to each row
-          }));
-          merTags = merTags.concat(fileDataWithFilename);
+        fileGroups.slice(1, -1).map(async (files) => {         
+          // Wait for all files in the group to be processed
+          const results = await Promise.all(
+            files.map(async (file) => {
+              const fileData = await readExcel(file, 0); // Assuming sheet index 0 for all file2 files
+              Dname.push(file.name.split(".")[0].split("-").join("")); 
+              const fileDataWithFilename = fileData.map((row) => ({
+                ...row,
+                filename: file.name.split(".")[0].split("-").join(""), // Add the filename property to each row
+              }));
+              return fileDataWithFilename; // Return processed data
+            })
+          );
+      
+          // Flatten results into merTags
+          merTags = merTags.concat(...results);
+          console.log(merTags);
         })
       );
+      
       const [epeTags, sapTags] = fileData;
-      const Dname = fileGroups.map((file) =>
-        file[0].name.split(".")[0].split("-").join("")
-      );
-
-      // console.log("📝 Processed Data Counts:", {
-      //   epeTags: epeTags.length,
-      //   merTags: merTags.length,
-      //   sapTags: sapTags.length,
-      // });
-
+      
+      console.log("📝 Processed Data Counts:", {
+        epeTags: epeTags.length,
+        merTags: merTags.length,
+        sapTags: sapTags.length,
+      });
+      
+      // Ensure all promises resolve before checking lengths
       if (epeTags.length === 0 || merTags.length === 0) {
         alert("Not enough data processed.");
         setLoading(false);
         return;
       }
+      
 
       const merTagMap = {};
       merTags.forEach((row) => {
@@ -140,15 +153,15 @@ const useExcelProcessor = () => {
           "MER Tag No": merMatch
             ? merMatch["MER TAG NO"]
             : Dname.includes(drawing["Drawing no"])
-            ? "NOT IN MER"
-            : "",
+              ? "NOT IN MER"
+              : "",
           "Site Markup Tag No": merMatch ? merMatch["SITE CHANGE"] : "",
           "Final MER Tag No": merMatch
             ? merMatch["SITE CHANGE"] && merMatch["SITE CHANGE"].includes("NO")
               ? merMatch["MER TAG NO"]
               : merMatch["SITE CHANGE"]
-              ? merMatch["SITE CHANGE"]
-              : merMatch["MER TAG NO"]
+                ? merMatch["SITE CHANGE"]
+                : merMatch["MER TAG NO"]
             : "NOT IN MER",
           "SAP tag": sapMatch
             ? merMatch
@@ -164,8 +177,8 @@ const useExcelProcessor = () => {
             ? merMatch["Size - Old"]
               ? merMatch["Size - Old"]
               : merMatch["Size - New"]
-              ? ""
-              : "NOT AVAILABLE"
+                ? ""
+                : "NOT AVAILABLE"
             : "NOT AVAILABLE",
           "Size From SAP": "",
           "Size - New": merMatch ? merMatch["Size - New"] : "",
@@ -215,8 +228,8 @@ const useExcelProcessor = () => {
               ? merRow["SITE CHANGE"] && merRow["SITE CHANGE"].includes("NO")
                 ? merRow["MER TAG NO"]
                 : merRow["SITE CHANGE"]
-                ? merRow["SITE CHANGE"]
-                : merRow["MER TAG NO"]
+                  ? merRow["SITE CHANGE"]
+                  : merRow["MER TAG NO"]
               : "",
             "SAP tag": "NOT IN SAP",
             MERRemarks: "",
@@ -391,7 +404,7 @@ const useExcelProcessor = () => {
         const matchingTagWithSap = sapTags.find(
           (tag) => tag["SAP TAG "] === drawing["EPE Tag Number"]
         );
-        console.log("EPE:", drawing?.["Size Old"], "MER:", matchingTagWithMer?.["Size Old"]); 
+        console.log("EPE:", drawing?.["Size Old"], "MER:", matchingTagWithMer?.["Size Old"]);
         return {
           "SL.NO": i + 1,
           "Drawing Number": drawing["Drawing Number"] || "",
@@ -413,12 +426,12 @@ const useExcelProcessor = () => {
           "Equipment Type - New": matchingTagWithMer
             ? matchingTagWithMer["Equipment Type-New"] || ""
             : "",
-            "Size Old":
+          "Size Old":
             matchingTagWithMer?.["Size Old"] && matchingTagWithMer["Size Old"].trim() !== ""
               ? matchingTagWithMer["Size Old"]
               : drawing?.["Size Old"]?.trim() !== ""
-              ? drawing["Size Old"]
-              : "",
+                ? drawing["Size Old"]
+                : "",
           // "Size - Old": matchingTagWithMer
           //   ? matchingTagWithMer["Size - Old"]
           //     ? matchingTagWithMer["Size - Old"]
@@ -466,7 +479,7 @@ const useExcelProcessor = () => {
               ? matchingTagWithSap["SAP DISCRIPTION"] || ""
               : "",
             "Equipment Type - New": tag ? tag["Equipment Type-New"] || "" : "",
-           "Size Old": tag?.["Size Old"] ?? "",
+            "Size Old": tag?.["Size Old"] ?? "",
             // "Size - Old": tag
             //   ? tag["Size - Old"]
             //     ? tag["Size - Old"]
@@ -752,12 +765,12 @@ const useExcelProcessor = () => {
           const shouldMerge =
             colIndex === MER_COL_INDEX
               ? cellValue === currentValue &&
-                cellValue &&
-                cellValue !== "NOT IN MER"
+              cellValue &&
+              cellValue !== "NOT IN MER"
               : cellValue === currentValue &&
-                cellValue &&
-                cellValue !== "NOT IN EPE" &&
-                cellValue !== "NOT IN MER";
+              cellValue &&
+              cellValue !== "NOT IN EPE" &&
+              cellValue !== "NOT IN MER";
 
           if (shouldMerge) {
             endRow = i;
