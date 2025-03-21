@@ -239,7 +239,7 @@ const useExcelProcessor = () => {
                   ? merRow["SITE CHANGE"]
                   : merRow["MER TAG NO"]
               : "",
-            "SAP tag": sapMatch ? "AVAILABLE IN SAP" : "NOT IN SAP",
+            "SAP tag": sapMatch ? "NO CHANGE IN SAP" : "NOT IN SAP",
             MERRemarks: "",
             "Equipment Description from SAP": sapMatch
               ? sapMatch["DESCRIPTION"]
