@@ -120,7 +120,7 @@ const useExcelProcessor = () => {
 
       const sapTagMap = {};
       sapTags.forEach((row) => {
-        sapTagMap[row["SAP-TAGS"]?.toLowerCase()] = row;
+        sapTagMap[typeof row["SAP-TAGS"] === "string" ? row["SAP-TAGS"]?.toLowerCase() : row["SAP-TAGS"]] = row;
       });
 
 
@@ -201,9 +201,10 @@ const useExcelProcessor = () => {
       merTags.forEach((merRow) => {
         if (
           !epeTags.some(
-            (drawing) => drawing["Tag Number"].toLowerCase() === merRow["MER TAG NO"].toLowerCase()
+            (drawing) => drawing["Tag Number"].toLowerCase() === merRow["MER TAG NO"].toLowerCase() && drawing["Drawing no"] === merRow.filename
           )
         ) {
+          merRow["MER TAG NO"] == "31-BV-2301" && console.log( merRow["MER TAG NO"]);
           let dngNo = "";
           // console.log("asd", merRow.filename)
           if (
