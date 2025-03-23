@@ -120,7 +120,7 @@ const useExcelProcessor = () => {
 
       const sapTagMap = {};
       sapTags.forEach((row) => {
-        sapTagMap[row["SAP-TAGS"]] = row;
+        sapTagMap[row["SAP-TAGS"]?.toLowerCase()] = row;
       });
 
 
@@ -130,7 +130,7 @@ const useExcelProcessor = () => {
           (merTagMap[tagNumber.toLowerCase()].filename === drawing["Drawing no"])
           ? merTagMap[tagNumber.toLowerCase()]
           : null;
-        const sapMatch = sapTagMap[tagNumber];
+        const sapMatch = sapTagMap[tagNumber.toLowerCase()];
         // console.log(sapMatch ? sapMatch["DESCRIPTION"] : "")
         let dngNo = "";
         if (
@@ -201,7 +201,7 @@ const useExcelProcessor = () => {
       merTags.forEach((merRow) => {
         if (
           !epeTags.some(
-            (drawing) => drawing["Tag Number"] === merRow["MER TAG NO"]
+            (drawing) => drawing["Tag Number"].toLowerCase() === merRow["MER TAG NO"].toLowerCase()
           )
         ) {
           let dngNo = "";
@@ -224,7 +224,7 @@ const useExcelProcessor = () => {
               merRow.filename.slice(11);
           }
 
-          const sapMatch = sapTagMap[merRow["MER TAG NO"]];
+          const sapMatch = sapTagMap[merRow["MER TAG NO"].toLowerCase()];
 
           processedData.push({
             "SL.NO": processedData.length + 1,
