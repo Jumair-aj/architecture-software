@@ -416,6 +416,9 @@ const useExcelProcessor = () => {
           (tag) => tag["SAP TAG "] === drawing["EPE Tag Number"]
         );
         console.log("EPE:", drawing?.["Size Old"], "MER:", matchingTagWithMer?.["Size Old"]);
+        function getCleanValue(value) {
+          return typeof value === "string" && value.trim() !== "" ? value : "";
+        }
         return {
           "SL.NO": i + 1,
           "Drawing Number": drawing["Drawing Number"] || "",
@@ -438,18 +441,8 @@ const useExcelProcessor = () => {
             ? matchingTagWithMer["Equipment Type-New"] || ""
             : "",
           "Size Old":
-            matchingTagWithMer?.["Size Old"] && matchingTagWithMer["Size Old"].trim() !== ""
-              ? matchingTagWithMer["Size Old"]
-              : drawing?.["Size Old"]?.trim() !== ""
-                ? drawing["Size Old"]
-                : "",
-          // "Size - Old": matchingTagWithMer
-          //   ? matchingTagWithMer["Size - Old"]
-          //     ? matchingTagWithMer["Size - Old"]
-          //     : matchingTagWithMer["size new"]
-          //     ? ""
-          //     : "NOT AVAILABLE"
-          //   : "NOT AVAILABLE",
+            getCleanValue(matchingTagWithMer?.["Size Old"]) ||
+            getCleanValue(drawing?.["Size Old"]),
           "Size - New": matchingTagWithMer
             ? matchingTagWithMer["size new"] || ""
             : "",
