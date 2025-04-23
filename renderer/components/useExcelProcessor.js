@@ -415,7 +415,6 @@ const useExcelProcessor = () => {
         const matchingTagWithSap = sapTags.find(
           (tag) => tag["SAP TAG "] === drawing["EPE Tag Number"]
         );
-        console.log("EPE:", drawing?.["Size Old"], "MER:", matchingTagWithMer?.["Size Old"]);
         function getCleanValue(value) {
           return typeof value === "string" && value.trim() !== "" ? value : "";
         }
