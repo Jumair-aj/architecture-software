@@ -440,8 +440,11 @@ const useExcelProcessor = () => {
             ? matchingTagWithMer["Equipment Type-New"] || ""
             : "",
           "Size Old":
-            getCleanValue(matchingTagWithMer?.["Size Old"]) ||
-            getCleanValue(drawing?.["Size Old"]),
+            typeof matchingTagWithMer?.["Size Old"] === "string" && matchingTagWithMer["Size Old"].trim() !== ""
+              ? matchingTagWithMer["Size Old"].trim()
+              : typeof drawing?.["Size Old"] === "string" && drawing["Size Old"].trim() !== ""
+                ? drawing["Size Old"].trim()
+                : "",
           "Size - New": matchingTagWithMer
             ? matchingTagWithMer["size new"] || ""
             : "",
