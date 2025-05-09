@@ -383,29 +383,29 @@ const useExcelProcessor = () => {
     const fileGroups = Object.values(uploads)
       .map((upload) => upload.files)
       .filter(Boolean);
-
+  
     if (fileGroups.length < 3) {
       alert("Please upload all three Excel files.");
       return;
     }
-
+  
     setLoading(true);
-
+  
     try {
       const fileData = await Promise.all([
         readExcel(fileGroups[0][0], 0),
         readExcel(fileGroups[1][0], 0),
         readExcel(fileGroups[2][0], 0),
       ]);
-
+  
       const [epeTags, merTags, sapTags] = fileData;
-
+  
       console.log("📝 Data Counts:", {
         epeTags: epeTags.length,
         merTags: merTags.length,
         sapTags: sapTags.length,
       });
-
+  
       const data = epeTags.map((drawing, i) => {
         const matchingTagWithMer = merTags.find(
           (tag) =>
@@ -415,9 +415,14 @@ const useExcelProcessor = () => {
         const matchingTagWithSap = sapTags.find(
           (tag) => tag["SAP TAG "] === drawing["EPE Tag Number"]
         );
-        function getCleanValue(value) {
-          return typeof value === "string" && value.trim() !== "" ? value : "";
-        }
+  
+        console.log(
+          "EPE:",
+          drawing?.["Size Old"],
+          "MER:",
+          matchingTagWithMer?.["Size Old"]
+        );
+  
         return {
           "SL.NO": i + 1,
           "Drawing Number": drawing["Drawing Number"] || "",
@@ -440,10 +445,11 @@ const useExcelProcessor = () => {
             ? matchingTagWithMer["Equipment Type-New"] || ""
             : "",
           "Size Old":
-            typeof matchingTagWithMer?.["Size Old"] === "string" && matchingTagWithMer["Size Old"].trim() !== ""
-              ? matchingTagWithMer["Size Old"].trim()
-              : typeof drawing?.["Size Old"] === "string" && drawing["Size Old"].trim() !== ""
-                ? drawing["Size Old"].trim()
+            matchingTagWithMer?.["Size Old"] &&
+            String(matchingTagWithMer["Size Old"]).trim() !== ""
+              ? matchingTagWithMer["Size Old"]
+              : String(drawing?.["Size Old"] || "").trim() !== ""
+                ? drawing["Size Old"]
                 : "",
           "Size - New": matchingTagWithMer
             ? matchingTagWithMer["size new"] || ""
@@ -461,7 +467,7 @@ const useExcelProcessor = () => {
           "OAO LINK": "",
         };
       });
-
+  
       // Add MER Tags not in EPE
       merTags.forEach((tag) => {
         if (
@@ -486,13 +492,6 @@ const useExcelProcessor = () => {
               : "",
             "Equipment Type - New": tag ? tag["Equipment Type-New"] || "" : "",
             "Size Old": tag?.["Size Old"] ?? "",
-            // "Size - Old": tag
-            //   ? tag["Size - Old"]
-            //     ? tag["Size - Old"]
-            //     : tag["size new"]
-            //     ? ""
-            //     : "NOT AVAILABLE"
-            //   : "NOT AVAILABLE",
             "Size - New": tag ? tag["size new"] || "" : "",
             "Drawing No.": tag["Drawing Number"] || "",
             s: "",
@@ -504,14 +503,14 @@ const useExcelProcessor = () => {
           });
         }
       });
-
+  
       // 🔹 Sorting based on Drawing Number
       data.sort((a, b) =>
         (a["Drawing Number"] || "").localeCompare(b["Drawing Number"] || "")
       );
-
+  
       console.log("✅ Final Processed Data:", data.length);
-
+  
       generateMergedExcel(data);
     } catch (error) {
       console.error("❌ Error processing files:", error);
