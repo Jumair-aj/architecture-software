@@ -834,8 +834,14 @@ const useExcelProcessor = () => {
                         epeValue === "NOT IN EPE"
                       )
                     ) {
-                      mergeSameValuesInColumn(startRow, endRow, relatedColIndex);
-                      // safeMergeCells(startRow, endRow, relatedColIndex);
+                      if (relatedColIndex === 1) {
+                        // Just do one safe merge from start to end if values match
+                        safeMergeCells(startRow, endRow, relatedColIndex);
+                      } else {
+                        // For other columns, apply merging based on groups of same values
+                        mergeSameValuesInColumn(startRow, endRow, relatedColIndex);
+                      }
+
                     }
                   }
                 });
