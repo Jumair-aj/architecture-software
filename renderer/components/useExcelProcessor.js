@@ -92,17 +92,11 @@ const useExcelProcessor = () => {
 
           // Flatten results into merTags
           merTags = merTags.concat(...results);
-          console.log(merTags);
         })
       );
 
       const [epeTags, sapTags] = fileData;
 
-      console.log("📝 Processed Data Counts:", {
-        epeTags: epeTags.length,
-        merTags: merTags.length,
-        sapTags: sapTags.length,
-      });
 
       // Ensure all promises resolve before checking lengths
       if (epeTags.length === 0 || merTags.length === 0) {
@@ -204,7 +198,6 @@ const useExcelProcessor = () => {
             (drawing) => drawing["Tag Number"].toLowerCase() === merRow["MER TAG NO"].toLowerCase() && drawing["Drawing no"] === merRow.filename
           )
         ) {
-          merRow["MER TAG NO"] == "31-BV-2301" && console.log( merRow["MER TAG NO"]);
           let dngNo = "";
           // console.log("asd", merRow.filename)
           if (
@@ -383,29 +376,29 @@ const useExcelProcessor = () => {
     const fileGroups = Object.values(uploads)
       .map((upload) => upload.files)
       .filter(Boolean);
-  
+
     if (fileGroups.length < 3) {
       alert("Please upload all three Excel files.");
       return;
     }
-  
+
     setLoading(true);
-  
+
     try {
       const fileData = await Promise.all([
         readExcel(fileGroups[0][0], 0),
         readExcel(fileGroups[1][0], 0),
         readExcel(fileGroups[2][0], 0),
       ]);
-  
+
       const [epeTags, merTags, sapTags] = fileData;
-  
-      console.log("📝 Data Counts:", {
-        epeTags: epeTags.length,
-        merTags: merTags.length,
-        sapTags: sapTags.length,
-      });
-  
+
+      // console.log("📝 Data Counts:", {
+      //   epeTags: epeTags.length,
+      //   merTags: merTags.length,
+      //   sapTags: sapTags.length,
+      // });
+
       const data = epeTags.map((drawing, i) => {
         const matchingTagWithMer = merTags.find(
           (tag) =>
@@ -415,14 +408,14 @@ const useExcelProcessor = () => {
         const matchingTagWithSap = sapTags.find(
           (tag) => tag["SAP TAG "] === drawing["EPE Tag Number"]
         );
-  
-        console.log(
-          "EPE:",
-          drawing?.["Size Old"],
-          "MER:",
-          matchingTagWithMer?.["Size Old"]
-        );
-  
+
+        // console.log(
+        //   "EPE:",
+        //   drawing?.["Size Old"],
+        //   "MER:",
+        //   matchingTagWithMer?.["Size Old"]
+        // );
+
         return {
           "SL.NO": i + 1,
           "Drawing Number": drawing["Drawing Number"] || "",
@@ -446,7 +439,7 @@ const useExcelProcessor = () => {
             : "",
           "Size Old":
             matchingTagWithMer?.["Size Old"] &&
-            String(matchingTagWithMer["Size Old"]).trim() !== ""
+              String(matchingTagWithMer["Size Old"]).trim() !== ""
               ? matchingTagWithMer["Size Old"]
               : String(drawing?.["Size Old"] || "").trim() !== ""
                 ? drawing["Size Old"]
@@ -467,7 +460,7 @@ const useExcelProcessor = () => {
           "OAO LINK": "",
         };
       });
-  
+
       // Add MER Tags not in EPE
       merTags.forEach((tag) => {
         if (
@@ -503,14 +496,14 @@ const useExcelProcessor = () => {
           });
         }
       });
-  
+
       // 🔹 Sorting based on Drawing Number
       data.sort((a, b) =>
         (a["Drawing Number"] || "").localeCompare(b["Drawing Number"] || "")
       );
-  
-      console.log("✅ Final Processed Data:", data.length);
-  
+
+      // console.log("✅ Final Processed Data:", data.length);
+
       generateMergedExcel(data);
     } catch (error) {
       console.error("❌ Error processing files:", error);
@@ -755,6 +748,26 @@ const useExcelProcessor = () => {
         }
       };
 
+      const mergeSameValuesInColumn = (startRow, endRow, colIndex) => {
+        let currentValue = getCellValue(startRow, colIndex);
+        let groupStartRow = startRow;
+
+        for (let row = startRow + 1; row <= endRow + 1; row++) {
+          const cellValue = row <= endRow ? getCellValue(row, colIndex) : null;
+
+          if (cellValue !== currentValue) {
+            // If values from groupStartRow to row - 1 are same, merge them
+            if (row - 1 > groupStartRow) {
+              safeMergeCells(groupStartRow, row - 1, colIndex);
+            }
+
+            // Start new group
+            currentValue = cellValue;
+            groupStartRow = row;
+          }
+        }
+      };
+
       // Function to merge cells for a specific column and related columns
       const mergeCellsForColumn = (colIndex) => {
         let currentValue = null;
@@ -782,8 +795,8 @@ const useExcelProcessor = () => {
           } else {
             if (startRow !== null && endRow !== null) {
               if (startRow !== endRow) {
+                // Merge the cells
                 safeMergeCells(startRow, endRow, colIndex);
-
                 columnsToMerge.forEach((relatedColIndex) => {
                   let shouldMerge = true;
 
@@ -821,7 +834,8 @@ const useExcelProcessor = () => {
                         epeValue === "NOT IN EPE"
                       )
                     ) {
-                      safeMergeCells(startRow, endRow, relatedColIndex);
+                      mergeSameValuesInColumn(startRow, endRow, relatedColIndex);
+                      // safeMergeCells(startRow, endRow, relatedColIndex);
                     }
                   }
                 });

@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "excel-exporter",
-  "description": "My application description",
+  "description": "Merge and export excel",
   "version": "1.0.0",
   "author": "Yoshihide Shiono <shiono.yoshihide@gmail.com>",
   "main": "app/background.js",
